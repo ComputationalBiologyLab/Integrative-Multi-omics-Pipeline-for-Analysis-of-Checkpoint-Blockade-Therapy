@@ -1,91 +1,206 @@
-# IMPACT
+# IMPACT  
+**Integrative Multi-omics Pipeline for Analysis of Checkpoint Blockade Therapy**
 
-Repository for the publication: **Integrative Multiomics Pipeline for Analysis of Checkpoint Therapy**
+---
 
 ## Overview
 
-IMPACT is a comprehensive bioinformatics pipeline designed to integrate and analyze multi-omics data from immunotherapy cohorts. This repository contains code and datasets from two major immunotherapy studies (Liu, Ravi), along with processing scripts for data standardization and cross-study integration.
+IMPACT is an integrative and interpretable bioinformatics pipeline designed to identify biomarkers associated with response to immune checkpoint blockade (ICB) therapy across cancer types. The framework combines multi-omics data with machine learning and network-based analyses to characterize molecular determinants of treatment response.
 
-## Project Structure
+The pipeline integrates **clinical, transcriptomic, genomic (SNP and CNA), and immune-related data** from independent immunotherapy cohorts and applies feature selection, predictive modeling, and systems-level analyses to identify clinically relevant biomarkers.
 
-### `Code/` Directory
-Contains all analysis and data processing scripts:
+## Graphical Abstract
 
-- **`MAIN_CODE.ipynb`** - Primary Jupyter notebook containing the main analysis pipeline, integrating all data processing and modeling steps
-- **`R Codes/`** - Supporting R scripts for specialized analyses:
-  - `Batch correction.R` - Batch effect correction across datasets
-  - `GRN.R` - Gene Regulatory Network analysis
-  - `mapping.R` - Gene ID mapping and annotation utilities
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/fefa6ac4-a2e3-44ea-a0a6-019a40bcb694" width="800"/>
+</p>
 
-### `Data/` Directory
-Organized by study and processing stage:
+---
 
-#### **`Liu/`** - Liu et al. immunotherapy cohort
-Raw and processed multi-omics data:
-- **Clinical Data**: `data_clinical_patient.tsv`, `data_clinical_sample.tsv`
-- **Gene Expression**: `data_mrna_seq_tpm.txt`, `processed_exp_data_liu.tsv`
-- **Copy Number Alterations (CNA)**: `data_cna.txt`, `processed_cna_data_liu.tsv`
-- **Mutations**: `data_mutations.txt`, `processed_snp_data_liu.tsv`
-- **Immune Cell Profiling**: `CIBERSORTx.csv` (immune cell deconvolution)
-- **Mapping Files**: Gene ID mapping for CNA (`mapping_liu_cna.tsv`), expression (`mapping_liu_exp.tsv`), and SNP (`mapping_liu_snp.tsv`)
-- **Biomart Annotation**: `mart_export.txt` (gene annotations)
-- **Clinical Labels**: `labels_liu.tsv`
+## Key Contributions
 
-#### **`Ravi/`** - Ravi et al. immunotherapy cohort
-Raw and processed multi-omics data with tumor purity information:
-- **Clinical Data**: `clinical.xlsx`, `processed_clinical_data_ravi.tsv`
-- **Gene Expression**: `mrna_tpm.tsv`, `processed_exp_data_ravi.tsv`
-- **Copy Number Alterations**: `gistic_gene.tsv`, `processed_cna_data_ravi.tsv`
-- **Mutations**: `Absolute_MAF_Final.tsv`, `processed_snp_data_ravi.tsv`
-- **Tumor Purity**: `purity_ploidy.tsv`, `total_amps_dels.tsv`
-- **Tumor Mutational Burden**: `tmb.tsv`
-- **Antigen Presentation**: `antigen_presentation.tsv`
-- **Mapping Files**: Gene ID mapping for CNA, expression, and SNP data
-- **Clinical Labels**: `labels_ravi.tsv`
+- Identification of **482 response-associated features** using multi-method feature selection  
+- Predictive modeling achieving **89% accuracy (SVM)** for ICB response classification  
+- Construction of **gene regulatory networks (GRNs)** and **co-mutational networks**  
+- Discovery of **11 candidate biomarkers** with prognostic relevance:  
+  - **Expression-associated:** `EEA1`, `RFX5`, `SALL2`, `TBX2`  
+  - **Mutation-associated:** `DLGAP2`, `INSRR`, `MBD5`, `PIK3C2G`, `RYR2`, `SCN1A`, `SLITRK3`  
 
-#### **`Merged/`** - Integrated multi-study dataset
-Cross-study integrated and harmonized data:
-- **Clinical Data**: `merged_clinical.tsv`
-- **Gene Expression**: `merged_expression.tsv` (harmonized across studies)
-- **Copy Number Alterations**: `merged_cna.tsv`
-- **SNP/Mutations**: `merged_snp.tsv`, `merged_snp_pre_normalization.tsv`
-- **Immune Cell Profiling**: `cibersort_merged.csv`
-- **Mapped Data**: Pre-processed datasets with standardized gene symbols:
-  - `mapped_merged_exp.tsv`
-  - `mapped_merged_cna.tsv`
-  - `mapped_merged_snp.tsv`
-- **Mapping Files**: Gene ID mapping tables for CNA, expression, and SNP data
-- **Merged Labels**: `merged_labels.tsv` (unified response/outcome labels)
+---
 
-## Data Types
+## Data Sources
 
-The pipeline integrates the following multi-omics data types:
+This study integrates two publicly available multi-omics immunotherapy cohorts:
 
-1. **Gene Expression** - mRNA abundance quantification (TPM/RPKM normalized)
-2. **Copy Number Alterations** - Somatic chromosomal gains/losses
-3. **Somatic Mutations** - SNVs and Indels from whole-exome/whole-genome sequencing
-4. **Clinical Data** - Patient demographics, treatment history, response to immunotherapy
-5. **Immune Cell Composition** - Tumor-infiltrating immune cell estimates (CIBERSORT deconvolution)
+- **Liu et al. (2019)** – Metastatic melanoma  
+- **Ravi et al. (2023)** – Non-small cell lung cancer (NSCLC)  
 
-## Key Features
+Final merged dataset:
 
-- **Multi-study Integration**: Harmonizes data across two independent immunotherapy cohorts
-- **Batch Correction**: Removes technical batch effects across different sequencing platforms and studies
-- **Gene Regulatory Network Analysis**: Identifies key regulatory relationships in immunotherapy response
-- **Co-Mutational Network Analysis**: Identifies candidate genes that are significantly co-mutated or have increased mutational rates between the two groups.
-- **Feature Selection**: Identifies relevant genes for predicting ICB success by integrating four different feature selection methods.
-- **Machine Learning**: Assesses the predictive capacity of the identified features on the task of predicting ICB response.
-- **Survival Analysis**: Identifies candidate genes relevant for ICB response prediction (Intersection between Gene Regulatory Networks and Co-Mutational Networks) and performs survival analysis on them.
+- **184 patients** with matched multi-omics profiles  
+- Response defined using **RECIST criteria** (CR/PR vs SD/PD)  
 
+---
+
+## Data Modalities
+
+The pipeline incorporates:
+
+1. **Clinical Data**  
+   - Demographics, treatment, survival outcomes, tumor characteristics  
+
+2. **Transcriptomics**  
+   - RNA-seq (TPM normalized)  
+
+3. **Somatic Mutations (SNPs)**  
+   - Aggregated mutation counts per gene  
+
+4. **Copy Number Alterations (CNA)**  
+   - Discrete (Liu) and discretized continuous values (Ravi)  
+
+5. **Immune Cell Composition**  
+   - Estimated using **CIBERSORTx (LM22 signature matrix)**  
+
+---
+
+## Pipeline Architecture
+
+### 1. Data Preprocessing
+
+- Harmonization of clinical variables across datasets  
+- Gene ID standardization (**HUGO → Entrez**)  
+- Batch correction using **limma (`removeBatchEffects`)**  
+- Filtering to **protein-coding genes (Ensembl BioMart)**  
+- Min-max normalization of numerical features  
+
+---
+
+### 2. Feature Selection
+
+Four independent methods:
+
+- Random Forest importance  
+- Recursive Feature Elimination (RFE)  
+- ANOVA F-statistic  
+- Mutual Information  
+
+Final feature set:
+
+- **Union of selected features → 482 features**
+
+---
+
+### 3. Machine Learning Models
+
+- Support Vector Machine (**best performance**)  
+- Random Forest  
+- Logistic Regression  
+
+Evaluation strategy:
+
+- Stratified **80/20 train-test split**  
+- Hyperparameter tuning via **grid search**  
+
+---
+
+### 4. Network Analysis
+
+#### Gene Regulatory Networks (GRNs)
+
+- Constructed using **GENIE3**  
+- Separate networks for responders and non-responders  
+- Hub definitions:
+  - **In-degree:** regulated genes  
+  - **Out-degree:** transcription factors  
+
+#### Co-mutational Networks
+
+- Based on mutation co-occurrence across patients  
+- Edge weight reflects co-mutation frequency  
+- Node size = degree, color = mutation burden  
+
+---
+
+### 5. Survival Analysis
+
+- Elastic Net Cox model (**scikit-survival**)  
+
+Performance:
+
+- Expression features: **C-index = 0.76**  
+- SNP features: **C-index = 0.88**  
+
+---
+
+## Repository Structure
+
+```
+
+IMPACT/
+│
+├── Code/
+│   ├── MAIN_CODE.ipynb
+│   └── R Codes/
+│       ├── Batch correction.R
+│       ├── GRN.R
+│       └── mapping.R
+│
+├── Data/
+│   ├── Liu/
+│   ├── Ravi/
+│   └── Merged/
+
+```
+
+### Notes
+
+- Core pipeline implemented in **Python (Jupyter Notebook)**  
+- Supporting analyses implemented in **R**:
+  - Batch correction  
+  - Gene regulatory networks  
+  - Gene ID mapping  
+
+---
+
+## Important Notes
+
+- Immune cell abundances are **not provided in raw datasets**  
+  → computed using **CIBERSORTx**
+
+- Co-mutational networks represent:
+  - **co-occurrence structure**, not differential mutation testing  
+
+- Feature selection uses **union strategy (primary analysis)**  
+
+---
 
 ## Data Availability
 
-Please refer to the original publications for access information and data usage policies.
+- Liu dataset: available via **cBioPortal**  
+- Ravi dataset: available via **Zenodo**  
+
+Refer to the manuscript for access details and usage policies.
+
+---
+
+## Code Availability
+
+GitHub repository:
+
+https://github.com/ComputationalBiologyLab/Predicting-Immune-Checkpoint-Blockade-Response-A-Multi-Omics-Based-Machine-Learning-Framework
+
+---
 
 ## Citation
 
-If you use this pipeline or processed data in your research, please cite the original publications.
+If you use this pipeline or processed data, cite:
+
+**Saadawy et al. – Integrative Multi-omics Pipeline for Analysis of Checkpoint Blockade Therapy**
+
+---
 
 ## License
 
-This repository is maintained for reproducibility of the publication. Please check individual data sources for licensing terms.
+This repository is provided for reproducibility.  
+Users must comply with licensing terms of the original datasets.
+```
