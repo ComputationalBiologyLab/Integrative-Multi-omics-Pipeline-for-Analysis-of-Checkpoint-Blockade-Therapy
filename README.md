@@ -4,7 +4,7 @@ Repository for the publication: **Integrative Multiomics Pipeline for Analysis o
 
 ## Overview
 
-IMPACT is a comprehensive bioinformatics pipeline designed to integrate and analyze multi-omics data from immunotherapy cohorts. This repository contains code and datasets from three major melanoma immunotherapy studies (Liu, Ravi, and Snyder), along with processing scripts for data standardization and cross-study integration.
+IMPACT is a comprehensive bioinformatics pipeline designed to integrate and analyze multi-omics data from immunotherapy cohorts. This repository contains code and datasets from two major immunotherapy studies (Liu, Ravi), along with processing scripts for data standardization and cross-study integration.
 
 ## Project Structure
 
@@ -43,16 +43,6 @@ Raw and processed multi-omics data with tumor purity information:
 - **Mapping Files**: Gene ID mapping for CNA, expression, and SNP data
 - **Clinical Labels**: `labels_ravi.tsv`
 
-#### **`Snyder/`** - Snyder et al. validation cohort
-Validation dataset for model evaluation:
-- **Clinical Data**: `data_clinical_patient_validation.txt`, `data_clinical_sample_validation.txt`, `processed_clinical_data_validation.tsv`
-- **Gene Expression**: `data_mrna_seq_rpkm.txt`, `processed_exp_data_validation_unfiltered_with_zero_expression.tsv`
-- **Copy Number Alterations**: `data_cna.txt`, `processed_cna_data_validation.tsv`
-- **Mutations**: `data_mutations.txt`, `processed_snp_data_validation.tsv`
-- **Immune Cell Profiling**: `cibersort_validation.csv`
-- **Mapping Files**: `mapping_from_entrez_to_symbol_for_validation_data.tsv`
-- **Clinical Labels**: `labels_validation.tsv`
-
 #### **`Merged/`** - Integrated multi-study dataset
 Cross-study integrated and harmonized data:
 - **Clinical Data**: `merged_clinical.tsv`
@@ -79,24 +69,16 @@ The pipeline integrates the following multi-omics data types:
 
 ## Key Features
 
-- **Multi-study Integration**: Harmonizes data across three independent immunotherapy cohorts
+- **Multi-study Integration**: Harmonizes data across two independent immunotherapy cohorts
 - **Batch Correction**: Removes technical batch effects across different sequencing platforms and studies
 - **Gene Regulatory Network Analysis**: Identifies key regulatory relationships in immunotherapy response
-- **Standardized Gene Mapping**: Converts gene identifiers to uniform gene symbols across all datasets
-- **Cross-validation Support**: Includes validation cohort (Snyder) for model evaluation
+- **Co-Mutational Network Analysis**: Identifies candidate genes that are significantly co-mutated or have increased mutational rates between the two groups.
+- **Feature Selection**: Identifies relevant genes for predicting ICB success by integrating four different feature selection methods.
+- **Machine Learning**: Assesses the predictive capacity of the identified features on the task of predicting ICB response.
+- **Survival Analysis**: Identifies candidate genes relevant for ICB response prediction (Intersection between Gene Regulatory Networks and Co-Mutational Networks) and performs survival analysis on them.
 
-## Usage
-
-1. Start with `Code/MAIN_CODE.ipynb` for the primary analysis pipeline
-2. Processed data in `Data/Merged/` is ready for downstream modeling
-3. Use R scripts in `Code/R Codes/` for specialized analyses
 
 ## Data Availability
-
-All underlying raw sequencing and clinical data have been deposited in publicly accessible repositories:
-- Liu et al. data: GEO Accession
-- Ravi et al. data: NCBI dbGaP
-- Snyder et al. data: GEO Accession
 
 Please refer to the original publications for access information and data usage policies.
 
