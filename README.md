@@ -17,177 +17,138 @@ The pipeline integrates **clinical, transcriptomic, genomic (SNP and CNA), and i
 
 ---
 
-## Key Contributions
+## Key contributions
 
-- Identification of **482 response-associated features** using multi-method feature selection  
-- Predictive modeling achieving **89% accuracy (SVM)** for ICB response classification  
-- Construction of **gene regulatory networks (GRNs)** and **co-mutational networks**  
+- Identification of **482 response-associated features** using multi-method feature selection (union of selected features retained in the integrative matrix).
+- **Nested cross-validation** (outer evaluation, inner grid search) for ICB response models, with reporting of **accuracy, F1, precision, recall, sensitivity, specificity, AUC-ROC, and AUPR** (see [Machine learning findings](#machine-learning-findings-full-482-feature-set)).
+- **Strongest ranking performance** on the full feature set: **SVM AUC-ROC = 0.958 ± 0.028** and **AUPR = 0.944 ± 0.038**; **highest mean accuracy** on the same protocol: **logistic regression 0.886 ± 0.032**.
+- Construction of **gene regulatory networks (GRNs)** and **co-mutational networks**.
 - Discovery of **11 candidate biomarkers** with prognostic relevance:  
   - **Expression-associated:** `EEA1`, `RFX5`, `SALL2`, `TBX2`  
   - **Mutation-associated:** `DLGAP2`, `INSRR`, `MBD5`, `PIK3C2G`, `RYR2`, `SCN1A`, `SLITRK3`  
 
 ---
 
-## Data Sources
+## Data sources
 
 This study integrates two publicly available multi-omics immunotherapy cohorts:
 
-- **Liu et al. (2019)** – Metastatic melanoma  
-- **Ravi et al. (2023)** – Non-small cell lung cancer (NSCLC)  
+- **Liu et al. (2019)** – metastatic melanoma (`Data/Liu/`)
+- **Ravi et al. (2023)** – non-small cell lung cancer (NSCLC) (`Data/Ravi/`)
 
-Final merged dataset:
+Merged cohort (processed tables under `Data/Merged/`):
 
-- **184 patients** with matched multi-omics profiles  
-- Response defined using **RECIST criteria** (CR/PR vs SD/PD)  
-
----
-
-## Data Modalities
-
-The pipeline incorporates:
-
-1. **Clinical Data**  
-   - Demographics, treatment, survival outcomes, tumor characteristics  
-
-2. **Transcriptomics**  
-   - RNA-seq (TPM normalized)  
-
-3. **Somatic Mutations (SNPs)**  
-   - Aggregated mutation counts per gene  
-
-4. **Copy Number Alterations (CNA)**  
-   - Discrete (Liu) and discretized continuous values (Ravi)  
-
-5. **Immune Cell Composition**  
-   - Estimated using **CIBERSORTx (LM22 signature matrix)**  
+- **184 patients** with matched multi-omics profiles in the merged expression / SNP / CNA tables  
+- **ICB response** is encoded in `Data/Merged/merged_labels.tsv` and in the modeling table `Data/final_dataset.csv` using **RECIST-style** response (responders vs non-responders).  
 
 ---
 
-## Pipeline Architecture
+## Data modalities
 
-### 1. Data Preprocessing
+1. **Clinical** – demographics, treatment, tumor characteristics (processed merged clinical: `Data/Merged/merged_clinical.tsv`; cohort-specific processed files under `Data/Liu/` and `Data/Ravi/`).
+2. **Transcriptomics** – TPM-level expression (`merged_expression.tsv`, `final_dataset.csv` gene columns).
+3. **Single nucleotide polymorphisms (SNPs)** – gene-level binary SNP features (`merged_snp.tsv`, `merged_snp_pre_normalization.tsv`).
+4. **Copy number alterations (CNA)** – discrete / discretized CNA features (`merged_cna.tsv`).
+5. **Immune composition** – **CIBERSORTx** (LM22); merged file `Data/Merged/cibersort_merged.csv`.
 
-- Harmonization of clinical variables across datasets  
-- Gene ID standardization (**HUGO → Entrez**)  
-- Batch correction using **limma (`removeBatchEffects`)**  
-- Filtering to **protein-coding genes (Ensembl BioMart)**  
-- Min-max normalization of numerical features  
-
----
-
-### 2. Feature Selection
-
-Four independent methods:
-
-- Random Forest importance  
-- Recursive Feature Elimination (RFE)  
-- ANOVA F-statistic  
-- Mutual Information  
-
-Final feature set:
-
-- **Union of selected features → 482 features**
+Supporting reference files include **protein-coding gene lists** (`Data/protein_coding_genes.tsv`) and **Entrez ↔ symbol mapping** tables under `Data/Merged/` and cohort subfolders.
 
 ---
 
-### 3. Machine Learning Models
+## Pipeline architecture
 
-- Support Vector Machine (**best performance**)  
-- Random Forest  
-- Logistic Regression  
+### 1. Data preprocessing
 
-Evaluation strategy:
+- Harmonization of clinical variables across cohorts.  
+- Gene ID standardization (**HUGO ↔ Entrez**) using mapping tables in `Data/*/mapping_*.tsv` and R helpers in `Code/R Codes/mapping.R`.  
+- Batch correction with **limma** (`removeBatchEffects`); script: `Code/R Codes/Batch correction.R`.  
+- Filtering to **protein-coding genes** (`Data/protein_coding_genes.tsv`).  
+- Min–max scaling where applied in the ML evaluation routine (fit on each outer-fold **training** split only).  
 
-- Stratified **80/20 train-test split**  
-- Hyperparameter tuning via **grid search**  
+### 2. Feature selection
+
+Four complementary approaches (as implemented in `MAIN_CODE.ipynb`): random forest importance, RFE, ANOVA *F*-test, and mutual information. The **union** of selected features defines the integrative panel (**482 features** in `Data/final_dataset.csv`, excluding `Sample Identifier` and `ICB Response`).
+
+### 3. Machine learning models
+
+- **Random Forest**, **SVM**, and **logistic regression** classifiers for binary ICB response.  
+- **Nested cross-validation** in `MAIN_CODE.ipynb` (`nested_cv_evaluate`):  
+  - **Outer loop:** stratified *k*-fold (*k* = 5, shuffled, `random_state=42`) for unbiased performance estimates.  
+  - **Inner loop:** `GridSearchCV` with 5-fold CV on the **outer training** fold only; inner tuning optimizes **accuracy**.  
+  - **MinMaxScaler** is fit on each outer training fold and applied to train/test for that fold (no leakage into held-out folds).  
+- **`final_dataset.csv`** is the primary input for the “full feature set” evaluation block (same feature definitions as the integrative model).  
+
+### 4. Network analysis
+
+#### Gene regulatory networks (GRNs)
+
+- Built with **GENIE3** (`Code/R Codes/GRN.R`).  
+- Separate networks for responders and non-responders; hub interpretation via in-degree / out-degree.  
+
+#### Co-mutational networks
+
+- Mutation **co-occurrence** across patients; edge weights reflect co-mutation frequency.  
+
+### 5. Survival analysis
+
+- **Elastic-net Cox** models using **scikit-survival** (`CoxnetSurvivalAnalysis`), in `Code/Survival_analysis.ipynb`.  
+- Uses expression and SNP feature sets **aligned with `Data/final_dataset.csv`**, merged with survival endpoints from Liu clinical tables and optional Ravi `clinical.xlsx` under `Data/Ravi/`.  
+- Generates cross-validated concordance profiles, coefficient plots, and exports such as `transcriptomic_data_survival.csv` and `SNP_survival.csv`.
 
 ---
 
-### 4. Network Analysis
+## Repository structure
 
-#### Gene Regulatory Networks (GRNs)
-
-- Constructed using **GENIE3**  
-- Separate networks for responders and non-responders  
-- Hub definitions:
-  - **In-degree:** regulated genes  
-  - **Out-degree:** transcription factors  
-
-#### Co-mutational Networks
-
-- Based on mutation co-occurrence across patients  
-- Edge weight reflects co-mutation frequency  
-- Node size = degree, color = mutation burden  
-
----
-
-### 5. Survival Analysis
-
-- Elastic Net Cox model (**scikit-survival**)  
-
-Performance:
-
-- Expression features: **C-index = 0.76**  
-- SNP features: **C-index = 0.88**  
-
----
-
-## Repository Structure
-
-```
-
+```text
 IMPACT/
 │
-├── Code/
-│   ├── MAIN_CODE.ipynb
-│   └── R Codes/
-│       ├── Batch correction.R
-│       ├── GRN.R
-│       └── mapping.R
-│
+├── README.md
 ├── Data/
-│   ├── Liu/
-│   ├── Ravi/
-│   └── Merged/
-
+│   ├── final_dataset.csv          # integrative modeling matrix (482 features + labels)
+│   ├── protein_coding_genes.tsv
+│   ├── Liu/                       # Liu cohort raw + processed tables, labels, CIBERSORTx
+│   ├── Ravi/                      # Ravi cohort processed omics, labels, ancillary TSVs
+│   └── Merged/                    # merged_expression, merged_snp(_pre_normalization), merged_cna,
+│                                  # merged_clinical, merged_labels, cibersort_merged.csv, mappings
+│
+└── Code/
+    ├── MAIN_CODE.ipynb            # full pipeline, nested CV evaluation, figures/tables
+    ├── Survival_analysis.ipynb    # Cox elastic net survival models (scikit-survival)
+    └── R Codes/
+        ├── Batch correction.R
+        ├── GRN.R
+        └── mapping.R
 ```
 
 ### Notes
 
-- Core pipeline implemented in **Python (Jupyter Notebook)**  
-- Supporting analyses implemented in **R**:
-  - Batch correction  
-  - Gene regulatory networks  
-  - Gene ID mapping  
+- Core predictive pipeline: **Python (Jupyter)** — `MAIN_CODE.ipynb`.  
+- Supporting analyses: **R** — batch correction, GRNs, ID mapping.  
 
 ---
 
-## Important Notes
+## Important notes
 
-- Immune cell abundances are **not provided in raw datasets**  
-  → computed using **CIBERSORTx**
-
-- Co-mutational networks represent:
-  - **co-occurrence structure**, not differential mutation testing  
-
-- Feature selection uses **union strategy (primary analysis)**  
+- Immune cell abundances are **not** in the raw downloads; they are estimated with **CIBERSORTx**.  
+- Co-mutational networks summarize **co-occurrence**, not formal differential mutation testing.  
+- Primary feature strategy for the integrative classifier is the **union** of feature-selection outputs.  
 
 ---
 
-## Data Availability
+## Data availability
 
-- Liu dataset: available via **cBioPortal**  
-- Ravi dataset: available via **Zenodo**  
+- **Liu** dataset: **cBioPortal** (see original study / portal accession).  
+- **Ravi** dataset: **Zenodo** (see original publication).  
 
 Refer to the manuscript for access details and usage policies.
 
 ---
 
-## Code Availability
+## Code availability
 
-GitHub repository:
+Primary development / integrative pipeline repository:
 
-https://github.com/ComputationalBiologyLab/Predicting-Immune-Checkpoint-Blockade-Response-A-Multi-Omics-Based-Machine-Learning-Framework
+https://github.com/ComputationalBiologyLab/Integrative-Multi-omics-Pipeline-for-Analysis-of-Checkpoint-Blockade-Therapy
 
 ---
 
@@ -201,6 +162,4 @@ If you use this pipeline or processed data, cite:
 
 ## License
 
-This repository is provided for reproducibility.  
-Users must comply with licensing terms of the original datasets.
-```
+This repository is provided for reproducibility. Users must comply with licensing terms of the original datasets.
